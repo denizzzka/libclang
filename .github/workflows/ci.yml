@@ -24,6 +24,8 @@ jobs:
           - x86_64
         clang:
           - 11.0.0
+          - 15.0.0
+          - 17.0.6
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3

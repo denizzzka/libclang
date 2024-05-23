@@ -51,4 +51,9 @@ jobs:
         env:
           LIBRARY_PATH: "${{ env.LLVM_PATH }}/lib"
 
+      - name: Build the library
+        run: dub build -q --arch=${{ matrix.arch }}
+        env:
+          LIBRARY_PATH: "${{ env.LLVM_PATH }}/lib"
+
       - uses: codecov/codecov-action@v3.1.4

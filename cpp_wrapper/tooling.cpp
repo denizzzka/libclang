@@ -6,6 +6,11 @@
 #include "llvm/ADT/StringRef.h"
 #include "tools/libclang/CXString.h"
 
+llvm::StringRef createStringRef(const char *data, size_t length)
+{
+    return llvm::StringRef(data, length);
+}
+
 clang::ASTUnit* buildASTFromCode(
     llvm::StringRef Code,
     llvm::StringRef FileName

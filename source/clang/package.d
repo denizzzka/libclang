@@ -38,8 +38,7 @@ TranslationUnit parse(in string fileName,
     // faux booleans
     const excludeDeclarationsFromPCH = 0;
     const displayDiagnostics = 0;
-    auto index = clang_createIndex(excludeDeclarationsFromPCH, displayDiagnostics);
-    scope(exit) clang_disposeIndex(index);
+    CXIndex index = clang_createIndex(excludeDeclarationsFromPCH, displayDiagnostics);
     CXUnsavedFile[] unsavedFiles;
     const commandLineArgz = commandLineArgs
         .map!(a => a.toStringz)
@@ -79,7 +78,7 @@ TranslationUnit parse(in string fileName,
                                  errorMessages.join("\n")));
 
 
-    return TranslationUnit(cx);
+    return TranslationUnit(index, cx);
 }
 
 string[] systemPaths() @safe {
@@ -123,23 +122,21 @@ mixin EnumD!("ChildVisitResult", CXChildVisitResult, "CXChildVisit_");
 alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 
 struct TranslationUnit {
-
+    private CXIndex index;
     CXTranslationUnit cx;
     Cursor cursor;
 
-    this(CXTranslationUnit cx) @safe nothrow {
+    this(CXIndex index, CXTranslationUnit cx) @safe nothrow {
         this.cx = cx;
         this.cursor = Cursor(clang_getTranslationUnitCursor(cx));
     }
 
-    // This pair of functions *should* work but crash dpp's tests intead
-    // A memory leak is a better than a crash, so...
+    @disable this(this);
 
-    // @disable this(this);
-
-    // ~this() @safe @nogc pure nothrow {
-    //     clang_disposeTranslationUnit(cx);
-    // }
+    ~this() @safe @nogc pure nothrow {
+        clang_disposeTranslationUnit(cx);
+        clang_disposeIndex(index);
+    }
 
     string spelling() @safe pure nothrow const {
         return clang_getTranslationUnitSpelling(cx).toString;
@@ -426,10 +423,6 @@ struct Cursor {
 
     Cursor specializedCursorTemplate() @safe pure nothrow const {
         return Cursor(clang_getSpecializedCursorTemplate(cx));
-    }
-
-    TranslationUnit translationUnit() @safe nothrow const {
-        return TranslationUnit(clang_Cursor_getTranslationUnit(cx));
     }
 
     Language translationUnitLanguage() @safe pure nothrow const {

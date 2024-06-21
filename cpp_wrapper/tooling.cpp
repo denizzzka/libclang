@@ -7,8 +7,8 @@
 #include "tools/libclang/CXString.h"
 
 clang::ASTUnit* buildASTFromCode(
-    const llvm::StringRef Code,
-    const llvm::StringRef FileName
+    llvm::StringRef Code,
+    llvm::StringRef FileName
 )
 {
     return clang::tooling::buildASTFromCode(Code, FileName).release();

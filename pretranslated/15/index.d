@@ -122,7 +122,16 @@ alias CXTargetInfo = CXTargetInfoImpl*;
 /**
  * A single translation unit, which resides in an index.
  */
-struct CXTranslationUnitImpl;
+struct CXTranslationUnitImpl {
+    void* CIdx;
+    void* TheASTUnit;
+    void* StringPool;
+    void* Diagnostics;
+    void* OverridenCursorsPool;
+    void* CommentToXML;
+    uint ParsingOptions;
+    void* Arguments;
+};
 alias CXTranslationUnit = CXTranslationUnitImpl*;
 
 /**

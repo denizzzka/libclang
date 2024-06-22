@@ -121,15 +121,25 @@ string[] systemPaths() @safe {
 mixin EnumD!("ChildVisitResult", CXChildVisitResult, "CXChildVisit_");
 alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 
+extern (C++, cxcursor) CXTranslationUnit getCursorTU(CXCursor Cursor);
+
 class TranslationUnit {
-    private CXIndex index;
+    private CXIndex index; // TODO: remove
     CXTranslationUnit cx;
+    private void* backupCommentToXML;
 
     this(CXIndex index, CXTranslationUnit cx) @safe nothrow {
+        this.index = index;
         this.cx = cx;
+        backupCommentToXML = cx.CommentToXML;
+
+        () @trusted {
+            cx.CommentToXML = cast(void*) this;
+        }();
     }
 
     ~this() @safe @nogc pure nothrow {
+        cx.CommentToXML = backupCommentToXML;
         clang_disposeTranslationUnit(cx);
         clang_disposeIndex(index);
     }
@@ -611,6 +621,13 @@ struct Cursor {
 
     private SourceRange _sourceRangeCreate() @safe pure nothrow const {
         return SourceRange(clang_getCursorExtent(cx));
+    }
+
+    private TranslationUnit getTranslationUnit() const
+    {
+        CXTranslationUnitImpl* tui = getCursorTU(cx);
+
+        return cast(TranslationUnit) tui.CommentToXML;
     }
 }
 

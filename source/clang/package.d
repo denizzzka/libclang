@@ -78,7 +78,7 @@ TranslationUnit parse(in string fileName,
                                  errorMessages.join("\n")));
 
 
-    return TranslationUnit(index, cx);
+    return new TranslationUnit(index, cx);
 }
 
 string[] systemPaths() @safe {
@@ -121,15 +121,13 @@ string[] systemPaths() @safe {
 mixin EnumD!("ChildVisitResult", CXChildVisitResult, "CXChildVisit_");
 alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 
-struct TranslationUnit {
+class TranslationUnit {
     private CXIndex index;
     CXTranslationUnit cx;
 
     this(CXIndex index, CXTranslationUnit cx) @safe nothrow {
         this.cx = cx;
     }
-
-    @disable this(this);
 
     ~this() @safe @nogc pure nothrow {
         clang_disposeTranslationUnit(cx);

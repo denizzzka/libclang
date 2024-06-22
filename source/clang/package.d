@@ -124,11 +124,9 @@ alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 struct TranslationUnit {
     private CXIndex index;
     CXTranslationUnit cx;
-    Cursor cursor;
 
     this(CXIndex index, CXTranslationUnit cx) @safe nothrow {
         this.cx = cx;
-        this.cursor = Cursor(clang_getTranslationUnitCursor(cx));
     }
 
     @disable this(this);
@@ -136,6 +134,11 @@ struct TranslationUnit {
     ~this() @safe @nogc pure nothrow {
         clang_disposeTranslationUnit(cx);
         clang_disposeIndex(index);
+    }
+
+    Cursor cursor() @safe nothrow
+    {
+        return Cursor(clang_getTranslationUnitCursor(cx));
     }
 
     string spelling() @safe pure nothrow const {

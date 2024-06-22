@@ -121,8 +121,6 @@ string[] systemPaths() @safe {
 mixin EnumD!("ChildVisitResult", CXChildVisitResult, "CXChildVisit_");
 alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 
-extern (C++, cxcursor) CXTranslationUnit getCursorTU(CXCursor Cursor);
-
 class TranslationUnit {
     private CXIndex index; // TODO: remove
     CXTranslationUnit cx;
@@ -625,7 +623,7 @@ struct Cursor {
 
     private TranslationUnit getTranslationUnit() const
     {
-        CXTranslationUnitImpl* tui = getCursorTU(cx);
+        CXTranslationUnitImpl* tui = clang_Cursor_getTranslationUnit(cx);
 
         return cast(TranslationUnit) tui.CommentToXML;
     }

@@ -121,8 +121,9 @@ string[] systemPaths() @safe {
 mixin EnumD!("ChildVisitResult", CXChildVisitResult, "CXChildVisit_");
 alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 
+
 class TranslationUnit {
-    private CXIndex index; // TODO: remove
+    private CXIndex index;
     CXTranslationUnit cx;
     private void* backupCommentToXML;
 

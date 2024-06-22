@@ -1,6 +1,7 @@
 // $ c++ -c -I/home/denizzz/Dev/llvm-project/clang/ -I/usr/lib/llvm-16/include/ cpp_wrapper/tooling.cpp
 
 #include <memory>
+#include "clang/Frontend/ASTUnit.h"
 #include "clang/Tooling/Tooling.h"
 //~ #include "clang-c/CXString.h"
 #include "llvm/ADT/StringRef.h"

@@ -123,9 +123,12 @@ alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 
 
 class TranslationUnit {
+    private static bool[TranslationUnit] inUse;
+
     private CXIndex index;
     CXTranslationUnit cx;
     private void* backupCommentToXML;
+    private size_t usersNum;
 
     this(CXIndex index, CXTranslationUnit cx) @safe nothrow {
         this.index = index;
@@ -141,6 +144,22 @@ class TranslationUnit {
         cx.CommentToXML = backupCommentToXML;
         clang_disposeTranslationUnit(cx);
         clang_disposeIndex(index);
+    }
+
+    private void addUsingCursor() @safe nothrow
+    {
+        if(usersNum == 0)
+            inUse[this] = true;
+
+        usersNum++;
+    }
+
+    private void removeUsingCursor() @safe nothrow
+    {
+        usersNum--;
+
+        if(usersNum == 0)
+            inUse.remove(this);
     }
 
     Cursor cursor() @safe nothrow
@@ -224,7 +243,9 @@ struct Cursor {
     mixin Lazy!_spelling;
     mixin Lazy!_sourceRange;
 
-    this(CXCursor cx) @safe @nogc pure nothrow {
+    this(CXCursor cx) @safe nothrow {
+        getTranslationUnit.addUsingCursor();
+
         this.cx = cx;
         kind = cast(Kind) clang_getCursorKind(cx);
         type = Type(clang_getCursorType(cx));
@@ -233,15 +254,22 @@ struct Cursor {
             underlyingType = Type(clang_getTypedefDeclUnderlyingType(cx));
     }
 
-    this(in Kind kind, in string spelling) @safe @nogc pure nothrow {
+    this(in Kind kind, in string spelling) @safe nothrow {
         this(kind, spelling, Type());
     }
 
-    this(in Kind kind, in string spelling, Type type) @safe @nogc pure nothrow {
+    this(in Kind kind, in string spelling, Type type) @safe nothrow {
+        getTranslationUnit.addUsingCursor();
+
         this.kind = kind;
         this._spelling = spelling;
         this._spellingInit = true;
         this.type = type;
+    }
+
+    ~this() @safe nothrow
+    {
+        getTranslationUnit.removeUsingCursor();
     }
 
     /// Lazily return the cursor's children
@@ -431,7 +459,7 @@ struct Cursor {
         return cast(bool) clang_Cursor_isMacroBuiltin(cx);
     }
 
-    Cursor specializedCursorTemplate() @safe pure nothrow const {
+    Cursor specializedCursorTemplate() @safe nothrow const {
         return Cursor(clang_getSpecializedCursorTemplate(cx));
     }
 
@@ -572,7 +600,7 @@ struct Cursor {
         return cast(bool) clang_equalCursors(cx, other.cx);
     }
 
-    bool opEquals(in Cursor other) @safe @nogc pure nothrow const {
+    bool opEquals(in ref Cursor other) @safe @nogc pure nothrow const {
         return cast(bool) clang_equalCursors(cx, other.cx);
     }
 
@@ -622,7 +650,7 @@ struct Cursor {
         return SourceRange(clang_getCursorExtent(cx));
     }
 
-    private TranslationUnit getTranslationUnit() const
+    private TranslationUnit getTranslationUnit() @trusted @nogc pure nothrow const
     {
         CXTranslationUnitImpl* tui = clang_Cursor_getTranslationUnit(cx);
 
@@ -821,7 +849,7 @@ struct Type {
         return cast(bool) clang_isVolatileQualifiedType(cx);
     }
 
-    Cursor declaration() @safe pure nothrow const {
+    Cursor declaration() @safe nothrow const {
         return Cursor(clang_getTypeDeclaration(cx));
     }
 

@@ -244,14 +244,14 @@ struct Cursor {
     mixin Lazy!_sourceRange;
 
     this(CXCursor cx) @safe nothrow {
-        getTranslationUnit.addUsingCursor();
-
         this.cx = cx;
         kind = cast(Kind) clang_getCursorKind(cx);
         type = Type(clang_getCursorType(cx));
 
         if(kind == Cursor.Kind.TypedefDecl || kind == Cursor.Kind.TypeAliasDecl)
             underlyingType = Type(clang_getTypedefDeclUnderlyingType(cx));
+
+        getTranslationUnit.addUsingCursor();
     }
 
     this(in Kind kind, in string spelling) @safe nothrow {
@@ -259,12 +259,12 @@ struct Cursor {
     }
 
     this(in Kind kind, in string spelling, Type type) @safe nothrow {
-        getTranslationUnit.addUsingCursor();
-
         this.kind = kind;
         this._spelling = spelling;
         this._spellingInit = true;
         this.type = type;
+
+        getTranslationUnit.addUsingCursor();
     }
 
     ~this() @safe nothrow

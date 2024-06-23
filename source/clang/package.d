@@ -126,7 +126,6 @@ class TranslationUnit {
 
     private CXIndex index;
     CXTranslationUnit cx;
-    private size_t usersNum;
 
     this(CXIndex index, CXTranslationUnit cx) @safe nothrow {
         this.index = index;
@@ -141,22 +140,6 @@ class TranslationUnit {
         cx.CommentToXML = null;
         clang_disposeTranslationUnit(cx);
         clang_disposeIndex(index);
-    }
-
-    private void addUsingCursor() @safe nothrow
-    {
-        if(usersNum == 0)
-            inUse[this] = true;
-
-        usersNum++;
-    }
-
-    private void removeUsingCursor() @safe nothrow
-    {
-        usersNum--;
-
-        if(usersNum == 0)
-            inUse.remove(this);
     }
 
     Cursor cursor() @safe nothrow
@@ -229,6 +212,7 @@ struct Cursor {
 
     alias Hash = ReturnType!clang_hashCursor;
 
+    private TranslationUnit trUnit;
     CXCursor cx;
     private Cursor[] _children;
     Kind kind;
@@ -240,7 +224,7 @@ struct Cursor {
     mixin Lazy!_spelling;
     mixin Lazy!_sourceRange;
 
-    this(CXCursor cx) @safe nothrow {
+    this(CXCursor cx) @safe @nogc pure nothrow {
         this.cx = cx;
         kind = cast(Kind) clang_getCursorKind(cx);
         type = Type(clang_getCursorType(cx));
@@ -248,25 +232,20 @@ struct Cursor {
         if(kind == Cursor.Kind.TypedefDecl || kind == Cursor.Kind.TypeAliasDecl)
             underlyingType = Type(clang_getTypedefDeclUnderlyingType(cx));
 
-        getTranslationUnit.addUsingCursor();
+        trUnit = getTranslationUnit();
     }
 
-    this(in Kind kind, in string spelling) @safe nothrow {
+    this(in Kind kind, in string spelling) @safe @nogc pure nothrow {
         this(kind, spelling, Type());
     }
 
-    this(in Kind kind, in string spelling, Type type) @safe nothrow {
+    this(in Kind kind, in string spelling, Type type) @safe @nogc pure nothrow {
         this.kind = kind;
         this._spelling = spelling;
         this._spellingInit = true;
         this.type = type;
 
-        getTranslationUnit.addUsingCursor();
-    }
-
-    ~this() @safe nothrow
-    {
-        getTranslationUnit.removeUsingCursor();
+        trUnit = getTranslationUnit();
     }
 
     /// Lazily return the cursor's children
@@ -456,7 +435,7 @@ struct Cursor {
         return cast(bool) clang_Cursor_isMacroBuiltin(cx);
     }
 
-    Cursor specializedCursorTemplate() @safe nothrow const {
+    Cursor specializedCursorTemplate() @safe pure nothrow const {
         return Cursor(clang_getSpecializedCursorTemplate(cx));
     }
 
@@ -597,7 +576,7 @@ struct Cursor {
         return cast(bool) clang_equalCursors(cx, other.cx);
     }
 
-    bool opEquals(in ref Cursor other) @safe @nogc pure nothrow const {
+    bool opEquals(in Cursor other) @safe @nogc pure nothrow const {
         return cast(bool) clang_equalCursors(cx, other.cx);
     }
 
@@ -846,7 +825,7 @@ struct Type {
         return cast(bool) clang_isVolatileQualifiedType(cx);
     }
 
-    Cursor declaration() @safe nothrow const {
+    Cursor declaration() @safe pure nothrow const {
         return Cursor(clang_getTypeDeclaration(cx));
     }
 

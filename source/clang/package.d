@@ -650,19 +650,16 @@ struct Cursor {
 
     private TranslationUnit fetchTranslationUnit() @safe @nogc pure nothrow const
     {
-        assert(trUnit is null, "must be called only from ctor");
+        assert(trUnit is null, "must be called once only from ctor");
 
         CXTranslationUnitImpl* tui = clang_Cursor_getTranslationUnit(cx);
         assert(tui !is null);
 
-        TranslationUnit tu;
-
-        () @trusted {
-            tu = cast(TranslationUnit) tui.CommentToXML;
+        return () @trusted {
+            TranslationUnit tu = cast(TranslationUnit) tui.CommentToXML;
             GC.addRoot(cast(void*) tu);
+            return tu;
         }();
-
-        return tu;
     }
 }
 

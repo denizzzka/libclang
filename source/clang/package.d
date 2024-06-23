@@ -648,7 +648,7 @@ struct Cursor {
         return SourceRange(clang_getCursorExtent(cx));
     }
 
-    private TranslationUnit fetchTranslationUnit() @trusted @nogc pure nothrow const
+    private TranslationUnit fetchTranslationUnit() @safe @nogc pure nothrow const
     {
         assert(trUnit is null, "must be called only from ctor");
 

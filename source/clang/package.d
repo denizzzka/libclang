@@ -262,14 +262,12 @@ struct Cursor {
     }
 
     ~this() @trusted @nogc pure nothrow {
-        assert(trUnit !is null);
-        GC.removeRoot(cast(void*) trUnit);
+        if(trUnit !is null)
+            GC.removeRoot(cast(void*) trUnit);
     }
 
     /// Lazily return the cursor's children
     auto children(this This)() @property {
-        assert(trUnit !is null);
-
         import std.array: appender;
         import std.traits: isMutable;
 
@@ -653,11 +651,14 @@ struct Cursor {
         assert(trUnit is null, "must be called once only from ctor");
 
         CXTranslationUnitImpl* tui = clang_Cursor_getTranslationUnit(cx);
-        assert(tui !is null);
 
         return () @trusted {
             TranslationUnit tu = cast(TranslationUnit) tui.CommentToXML;
-            GC.addRoot(cast(void*) tu);
+
+            // tu can be null if cursor created by cxcursor::MakeCXCursorInvalid
+            if(tu !is null)
+                GC.addRoot(cast(void*) tu);
+
             return tu;
         }();
     }

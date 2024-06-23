@@ -652,13 +652,14 @@ struct Cursor {
 
         CXTranslationUnitImpl* tui = clang_Cursor_getTranslationUnit(cx);
 
+        // can be null if cursor created by cxcursor::MakeCXCursorInvalid
+        if(tui is null)
+            return null;
+
         return () @trusted {
             TranslationUnit tu = cast(TranslationUnit) tui.CommentToXML;
-
-            // tu can be null if cursor created by cxcursor::MakeCXCursorInvalid
-            if(tu !is null)
-                GC.addRoot(cast(void*) tu);
-
+            assert(tu !is null);
+            GC.addRoot(cast(void*) tu);
             return tu;
         }();
     }

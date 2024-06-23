@@ -653,6 +653,7 @@ struct Cursor {
         assert(trUnit is null, "must be called only from ctor");
 
         CXTranslationUnitImpl* tui = clang_Cursor_getTranslationUnit(cx);
+        assert(tui !is null);
 
         TranslationUnit tu;
 

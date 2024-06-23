@@ -603,7 +603,7 @@ struct Cursor {
         return cast(bool) clang_equalCursors(cx, other.cx);
     }
 
-    bool opEquals(in ref Cursor other) @safe @nogc pure nothrow const {
+    bool opEquals(in Cursor other) @safe nothrow const {
         return cast(bool) clang_equalCursors(cx, other.cx);
     }
 

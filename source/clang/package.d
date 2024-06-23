@@ -129,12 +129,17 @@ class TranslationUnit {
         this.index = index;
         this.cx = cx;
 
+        assert(cx.CommentToXML is null);
         () @trusted {
             cx.CommentToXML = cast(void*) this;
         }();
     }
 
     ~this() @safe @nogc pure nothrow {
+        () @trusted {
+            assert(cx.CommentToXML == cast(void*) this);
+        }();
+
         cx.CommentToXML = null;
         clang_disposeTranslationUnit(cx);
         clang_disposeIndex(index);

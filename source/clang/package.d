@@ -126,13 +126,11 @@ class TranslationUnit {
 
     private CXIndex index;
     CXTranslationUnit cx;
-    private void* backupCommentToXML;
     private size_t usersNum;
 
     this(CXIndex index, CXTranslationUnit cx) @safe nothrow {
         this.index = index;
         this.cx = cx;
-        backupCommentToXML = cx.CommentToXML;
 
         () @trusted {
             cx.CommentToXML = cast(void*) this;
@@ -140,7 +138,7 @@ class TranslationUnit {
     }
 
     ~this() @safe @nogc pure nothrow {
-        cx.CommentToXML = backupCommentToXML;
+        cx.CommentToXML = null;
         clang_disposeTranslationUnit(cx);
         clang_disposeIndex(index);
     }

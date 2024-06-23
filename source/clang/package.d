@@ -253,7 +253,7 @@ struct Cursor {
         }();
     }
 
-    ~this() @trusted @nogc pure nothrow {
+    ~this() @trusted @nogc pure nothrow scope {
         if(trUnit !is null)
             GC.removeRoot(cast(void*) trUnit);
     }

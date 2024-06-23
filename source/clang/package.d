@@ -148,7 +148,10 @@ class TranslationUnit {
     private void addUsingCursor() @safe nothrow
     {
         if(usersNum == 0)
+        {
+            assert(inUse.length == 0);
             inUse[this] = true;
+        }
 
         usersNum++;
     }
@@ -158,7 +161,10 @@ class TranslationUnit {
         usersNum--;
 
         if(usersNum == 0)
+        {
             inUse.remove(this);
+            assert(inUse.length == 0);
+        }
     }
 
     Cursor cursor() @safe nothrow

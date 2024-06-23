@@ -204,6 +204,7 @@ struct Cursor {
 
     import clang.util: Lazy;
     import std.traits: ReturnType;
+    import core.memory: GC;
 
     mixin EnumD!("Kind", CXCursorKind, "CXCursor_");
     mixin EnumD!("StorageClass", CX_StorageClass, "CX_SC_");
@@ -231,6 +232,9 @@ struct Cursor {
             underlyingType = Type(clang_getTypedefDeclUnderlyingType(cx));
 
         trUnit = getTranslationUnit();
+        () @trusted {
+            GC.addRoot(cast(void*) trUnit);
+        }();
     }
 
     this(in Kind kind, in string spelling) @safe @nogc pure nothrow {
@@ -244,6 +248,14 @@ struct Cursor {
         this.type = type;
 
         trUnit = getTranslationUnit();
+        () @trusted {
+            GC.addRoot(cast(void*) trUnit);
+        }();
+    }
+
+    ~this() @trusted @nogc pure nothrow {
+        if(trUnit !is null)
+            GC.removeRoot(cast(void*) trUnit);
     }
 
     /// Lazily return the cursor's children

@@ -249,6 +249,15 @@ struct Cursor {
         this._spellingInit = true;
         this.type = type;
 
+        this.trUnit = fetchTranslationUnit();
+    }
+
+    this()(ref return Cursor s) @safe @nogc pure nothrow {
+        cx = s.cx;
+        kind = s.kind;
+        type = s.type;
+        underlyingType = s.underlyingType;
+
         trUnit = fetchTranslationUnit();
     }
 
@@ -285,7 +294,9 @@ struct Cursor {
         import std.array: Appender;
 
         auto app = () @trusted { return cast(Appender!(Cursor[])*) clientData; }();
-        *app ~= Cursor(cursor);
+        auto newCur = Cursor(cursor);
+
+        () @trusted { *app ~= Cursor(cursor); }();
 
         return CXChildVisit_Continue;
     }

@@ -122,8 +122,6 @@ mixin EnumD!("ChildVisitResult", CXChildVisitResult, "CXChildVisit_");
 alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 
 class TranslationUnit {
-    private static bool[TranslationUnit] inUse;
-
     private CXIndex index;
     CXTranslationUnit cx;
 

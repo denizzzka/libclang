@@ -236,10 +236,7 @@ struct Cursor {
         if(kind == Cursor.Kind.TypedefDecl || kind == Cursor.Kind.TypeAliasDecl)
             underlyingType = Type(clang_getTypedefDeclUnderlyingType(cx));
 
-        trUnit = getTranslationUnit();
-        () @trusted {
-            GC.addRoot(cast(void*) trUnit);
-        }();
+        trUnit = fetchTranslationUnit();
     }
 
     this(in Kind kind, in string spelling) @safe @nogc pure nothrow {
@@ -252,15 +249,12 @@ struct Cursor {
         this._spellingInit = true;
         this.type = type;
 
-        trUnit = getTranslationUnit();
-        () @trusted {
-            GC.addRoot(cast(void*) trUnit);
-        }();
+        trUnit = fetchTranslationUnit();
     }
 
     ~this() @trusted @nogc pure nothrow {
-        if(trUnit !is null)
-            GC.removeRoot(cast(void*) trUnit);
+        assert(trUnit !is null);
+        GC.removeRoot(cast(void*) trUnit);
     }
 
     /// Lazily return the cursor's children
@@ -641,11 +635,20 @@ struct Cursor {
         return SourceRange(clang_getCursorExtent(cx));
     }
 
-    private TranslationUnit getTranslationUnit() @trusted @nogc pure nothrow const
+    private TranslationUnit fetchTranslationUnit() @trusted @nogc pure nothrow const
     {
+        assert(trUnit is null, "must be called only from ctor");
+
         CXTranslationUnitImpl* tui = clang_Cursor_getTranslationUnit(cx);
 
-        return cast(TranslationUnit) tui.CommentToXML;
+        TranslationUnit tu;
+
+        () @trusted {
+            tu = cast(TranslationUnit) tui.CommentToXML;
+            GC.addRoot(cast(void*) tu);
+        }();
+
+        return tu;
     }
 }
 

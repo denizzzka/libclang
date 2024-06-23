@@ -268,6 +268,8 @@ struct Cursor {
 
     /// Lazily return the cursor's children
     auto children(this This)() @property {
+        assert(trUnit !is null);
+
         import std.array: appender;
         import std.traits: isMutable;
 

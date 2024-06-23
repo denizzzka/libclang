@@ -209,7 +209,6 @@ struct Cursor {
 
     import clang.util: Lazy;
     import std.traits: ReturnType;
-    import core.memory: GC;
 
     mixin EnumD!("Kind", CXCursorKind, "CXCursor_");
     mixin EnumD!("StorageClass", CX_StorageClass, "CX_SC_");
@@ -259,11 +258,6 @@ struct Cursor {
         underlyingType = s.underlyingType;
 
         trUnit = fetchTranslationUnit();
-    }
-
-    ~this() @trusted @nogc pure nothrow {
-        if(trUnit !is null)
-            GC.removeRoot(cast(void*) trUnit);
     }
 
     /// Lazily return the cursor's children
@@ -659,7 +653,6 @@ struct Cursor {
         return () @trusted {
             TranslationUnit tu = cast(TranslationUnit) tui.CommentToXML;
             assert(tu !is null);
-            GC.addRoot(cast(void*) tu);
             return tu;
         }();
     }

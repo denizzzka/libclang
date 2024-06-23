@@ -451,6 +451,10 @@ struct Cursor {
         return Cursor(clang_getSpecializedCursorTemplate(cx));
     }
 
+    TranslationUnit translationUnit() @safe nothrow {
+        return trUnit;
+    }
+
     Language translationUnitLanguage() @safe pure nothrow const {
         return fileNameToLanguage(clang_getTranslationUnitSpelling(clang_Cursor_getTranslationUnit(cx)).toString);
     }

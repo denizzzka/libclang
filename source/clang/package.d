@@ -38,8 +38,7 @@ TranslationUnit parse(in string fileName,
     // faux booleans
     const excludeDeclarationsFromPCH = 0;
     const displayDiagnostics = 0;
-    auto index = clang_createIndex(excludeDeclarationsFromPCH, displayDiagnostics);
-    scope(exit) clang_disposeIndex(index);
+    CXIndex index = clang_createIndex(excludeDeclarationsFromPCH, displayDiagnostics);
     CXUnsavedFile[] unsavedFiles;
     const commandLineArgz = commandLineArgs
         .map!(a => a.toStringz)
@@ -79,7 +78,7 @@ TranslationUnit parse(in string fileName,
                                  errorMessages.join("\n")));
 
 
-    return TranslationUnit(cx);
+    return new TranslationUnit(index, cx);
 }
 
 string[] systemPaths() @safe {
@@ -122,24 +121,34 @@ string[] systemPaths() @safe {
 mixin EnumD!("ChildVisitResult", CXChildVisitResult, "CXChildVisit_");
 alias CursorVisitor = ChildVisitResult delegate(Cursor cursor, Cursor parent);
 
-struct TranslationUnit {
-
+class TranslationUnit {
+    private CXIndex index;
     CXTranslationUnit cx;
-    Cursor cursor;
 
-    this(CXTranslationUnit cx) @safe nothrow {
+    this(CXIndex index, CXTranslationUnit cx) @safe nothrow {
+        this.index = index;
         this.cx = cx;
-        this.cursor = Cursor(clang_getTranslationUnitCursor(cx));
+
+        assert(cx.CommentToXML is null);
+        () @trusted {
+            cx.CommentToXML = cast(void*) this;
+        }();
     }
 
-    // This pair of functions *should* work but crash dpp's tests intead
-    // A memory leak is a better than a crash, so...
+    ~this() @safe @nogc pure nothrow {
+        () @trusted {
+            assert(cx.CommentToXML == cast(void*) this);
+        }();
 
-    // @disable this(this);
+        cx.CommentToXML = null;
+        clang_disposeTranslationUnit(cx);
+        clang_disposeIndex(index);
+    }
 
-    // ~this() @safe @nogc pure nothrow {
-    //     clang_disposeTranslationUnit(cx);
-    // }
+    Cursor cursor() @safe nothrow
+    {
+        return Cursor(clang_getTranslationUnitCursor(cx));
+    }
 
     string spelling() @safe pure nothrow const {
         return clang_getTranslationUnitSpelling(cx).toString;
@@ -206,6 +215,7 @@ struct Cursor {
 
     alias Hash = ReturnType!clang_hashCursor;
 
+    private TranslationUnit trUnit;
     CXCursor cx;
     private Cursor[] _children;
     Kind kind;
@@ -224,6 +234,8 @@ struct Cursor {
 
         if(kind == Cursor.Kind.TypedefDecl || kind == Cursor.Kind.TypeAliasDecl)
             underlyingType = Type(clang_getTypedefDeclUnderlyingType(cx));
+
+        trUnit = fetchTranslationUnit();
     }
 
     this(in Kind kind, in string spelling) @safe @nogc pure nothrow {
@@ -235,6 +247,17 @@ struct Cursor {
         this._spelling = spelling;
         this._spellingInit = true;
         this.type = type;
+
+        this.trUnit = fetchTranslationUnit();
+    }
+
+    this()(ref return Cursor s) @safe @nogc pure nothrow {
+        cx = s.cx;
+        kind = s.kind;
+        type = s.type;
+        underlyingType = s.underlyingType;
+
+        trUnit = fetchTranslationUnit();
     }
 
     /// Lazily return the cursor's children
@@ -428,10 +451,6 @@ struct Cursor {
         return Cursor(clang_getSpecializedCursorTemplate(cx));
     }
 
-    TranslationUnit translationUnit() @safe nothrow const {
-        return TranslationUnit(clang_Cursor_getTranslationUnit(cx));
-    }
-
     Language translationUnitLanguage() @safe pure nothrow const {
         return fileNameToLanguage(clang_getTranslationUnitSpelling(clang_Cursor_getTranslationUnit(cx)).toString);
     }
@@ -617,6 +636,23 @@ struct Cursor {
 
     private SourceRange _sourceRangeCreate() @safe pure nothrow const {
         return SourceRange(clang_getCursorExtent(cx));
+    }
+
+    private TranslationUnit fetchTranslationUnit() @safe @nogc pure nothrow const
+    {
+        assert(trUnit is null, "must be called once only from ctor");
+
+        CXTranslationUnitImpl* tui = clang_Cursor_getTranslationUnit(cx);
+
+        // can be null if cursor created by cxcursor::MakeCXCursorInvalid
+        if(tui is null)
+            return null;
+
+        return () @trusted {
+            TranslationUnit tu = cast(TranslationUnit) tui.CommentToXML;
+            assert(tu !is null);
+            return tu;
+        }();
     }
 }
 

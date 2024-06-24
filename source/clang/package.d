@@ -247,8 +247,6 @@ struct Cursor {
         this._spelling = spelling;
         this._spellingInit = true;
         this.type = type;
-
-        this.trUnit = fetchTranslationUnit();
     }
 
     this()(ref return Cursor s) @safe @nogc pure nothrow {
